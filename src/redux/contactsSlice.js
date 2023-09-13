@@ -1,28 +1,90 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+
+const baseURL = 'https://6500383418c34dee0cd484f6.mockapi.io'
+
+export const fetchContacts = createAsyncThunk(
+    'contacts/fetchAll',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await fetch(`${baseURL}/contacts`);
+            return response.data
+        } catch (error) {
+            rejectWithValue(error.message)
+        }
+    }
+);
+export const deleteContact = createAsyncThunk(
+    'contacts/deleteContact',
+    async (removeId, { rejectWithValue }) => {
+        try {
+            const response = await fetch(`${baseURL}/contacts/${removeId}`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+export const addContact = createAsyncThunk(
+    'contacts/addContact',
+    async (contact, { rejectWithValue }) => {
+        try {
+            const response = await fetch(`${baseURL}/contacts`, {
+                name: `${contact.name}`,
+                number: `${contact.number}`,
+            });
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.message);
+        }
+    }
+);
+
+const handlePending = state => {
+  state.contacts.isLoading = true;
+};
+
+const handleRejected = (state, action) => {
+  state.contacts.isLoading = false;
+  state.contacts.error = action.payload;
+};
 
 const initialState = {
-    contacts: [
-      { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
-      { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
-      { id: 'id-3', name: 'Eden Clements', number: '645-17-79' },
-      { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
-    ],
-}
+  contacts: {
+    items: [],
+    isLoading: false,
+    error: null,
+  },
+};
 
 const contactsSlice = createSlice({
-    name: "contacts",
+    name: 'contacts',
     initialState,
-    reducers: {
-        addContact: (state, action) => ({
-            ...state,
-            contacts: [...state.contacts, action.payload]
-        }),
-        removeContact: (state, action) => ({
-            ...state,
-            contacts: state.contacts.filter(el => el.id !== action.payload)
-        }),
-    }
+    extraReducers: (builder) => {
+        builder.addCase(fetchContacts.pending, handlePending);
+        builder.addCase(fetchContacts.fulfilled, (state, action) => {
+            state.contacts.isLoading = false;
+            state.contacts.error = null;
+            state.contacts.items = action.payload;
+        });
+        builder.addCase(fetchContacts.rejected, handleRejected);
+        builder.addCase(deleteContact.pending, handlePending);
+        builder.addCase(deleteContact.fulfilled, (state, action) => {
+            state.contacts.isLoading = false;
+            state.contacts.error = null;
+            state.contacts.items = state.contacts.items.filter(
+                ({ id }) => id !== action.payload.id
+            );
+        });
+        builder.addCase(deleteContact.rejected, handleRejected);
+        builder.addCase(addContact.pending, handlePending);
+        builder.addCase(addContact.fulfilled, (state, { payload: newContact }) => {
+            state.contacts.isLoading = false;
+            state.contacts.error = null;
+            state.contacts.items = [...state.contacts.items, newContact];
+        });
+        builder.addCase(addContact.rejected, handleRejected);
+    },
 });
 
-export const { addContact, removeContact} = contactsSlice.actions;
 export default contactsSlice.reducer;

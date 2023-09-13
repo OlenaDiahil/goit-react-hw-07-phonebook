@@ -1,8 +1,8 @@
 /* eslint-disable default-case */
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { addContact } from 'redux/contactsSlice';
 import { nanoid } from 'nanoid';
+import { addContact } from 'redux/contactsSlice';
 
 export const ContactsForm = () => {
   const [name, setName] = useState('');
